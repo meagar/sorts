@@ -98,14 +98,4 @@ func quicksort_partition(s SortInput, lo, hi int) int {
 		// swap A[i] with A[j]
 		s.Swap(i, j)
 	}
-	// i := lo - 1
-
-	// for j := lo; j <= hi; j++ {
-	// 	if s.Cmp(j, hi) {
-	// 		i++
-	// 		s.Swap(i, j)
-	// 	}
-	// }
-
-	// return i
 }

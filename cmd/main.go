@@ -19,14 +19,14 @@ func main() {
 			{
 				Name:     "BubbleSort",
 				Fn:       sorts.BubbleSort,
-				DefaultN: 25,
-				Sleep:    5,
+				DefaultN: 50,
+				Sleep:    0,
 			},
 			{
 				Name:     "QuickSort",
 				Fn:       sorts.QuickSort,
 				DefaultN: 250,
-				Sleep:    3,
+				Sleep:    0,
 			},
 		},
 	})

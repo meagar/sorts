@@ -41,6 +41,7 @@ type Game struct {
 
 	// Which algorithm case we're displaying
 	active int
+	alg    *Alg
 
 	// Sorting state
 	lastSwap [2]int // the last two indexes that were swapped (to draw colored bars)
@@ -55,19 +56,22 @@ func (g *Game) init() {
 }
 
 func (g *Game) nextAlg() {
+	g.alg = nil
 	alg := g.Algs[g.active]
+	g.active++
+	if g.active >= len(g.Algs) {
+		g.active = 0
+	}
 
+	g.swaps = 0
 	ints := shuffle(alg.DefaultN)
 	bars := make([]*bar, len(ints))
 
 	// Create our bars, scaled to the (screenWidth/numBars) width and (n/max * screenHeight) height
 	g.barWidth = float64(g.screenWidth)/float64(len(ints)) - 1
 	max := float64(max(ints))
-	fmt.Println(g.barWidth)
 	for i, n := range ints {
-		fmt.Println()
 		h := (float64(n)/max)*float64(g.screenHeight) + 1
-		fmt.Println(n, h)
 		bars[i] = &bar{
 			n:      n,
 			height: h,
@@ -76,10 +80,11 @@ func (g *Game) nextAlg() {
 
 		bars[i].img.Fill(color.White)
 	}
-	g.bars = bars
 
-	g.tick = make(chan struct{})
+	g.alg = alg
+	g.bars = bars
 	g.done = false
+	g.tick = make(chan struct{})
 	go alg.Fn(g)
 }
 
@@ -107,39 +112,42 @@ func (g *Game) Update() error {
 		g.init()
 	}
 
+	if g.alg == nil {
+		return nil
+	}
+
 	if !g.done {
-		ticks++
-		if ticks > g.alg().Sleep {
-			ticks = 0
-			g.tick <- struct{}{}
-		}
+		// ticks++
+		// if ticks > g.alg().Sleep {
+		// ticks = 0
+		g.tick <- struct{}{}
+		// }
 	}
 
 	return nil
 }
 
-func (g *Game) alg() *Alg {
-	return g.Algs[g.active]
-}
-
 func (g *Game) Draw(screen *ebiten.Image) {
+	if g.alg == nil {
+		return
+	}
 	op := ebiten.DrawImageOptions{}
 	for i, b := range g.bars {
 		op.GeoM.Reset()
 		op.GeoM.Translate((g.barWidth+1)*float64(i), float64(g.screenHeight)-b.height)
 
 		// Ideally, we'd just have one blue sprite and one red sprite, rather than filling/refilling constantly
-		if i == g.lastSwap[0] {
-			b.img.Fill(color.RGBA{255, 0, 0, 255})
-		} else if i == g.lastSwap[1] {
-			b.img.Fill(color.RGBA{0, 0, 255, 255})
-		} else {
-			b.img.Fill(color.White)
-		}
+		// if i == g.lastSwap[0] {
+		// 	b.img.Fill(color.RGBA{255, 0, 0, 255})
+		// } else if i == g.lastSwap[1] {
+		// 	b.img.Fill(color.RGBA{0, 0, 255, 255})
+		// } else {
+		// 	b.img.Fill(color.White)
+		// }
 
 		screen.DrawImage(b.img, &op)
 	}
-	debugMsg := fmt.Sprintf("%s %d elements: %d swaps\nFPS: %0.2f", g.alg().Name, len(g.bars), g.swaps, ebiten.CurrentFPS())
+	debugMsg := fmt.Sprintf("%s %d elements: %d swaps\nFPS: %0.2f", g.alg.Name, len(g.bars), g.swaps, ebiten.CurrentFPS())
 	if g.done {
 		debugMsg += "\nDone"
 	}
@@ -182,12 +190,7 @@ func (g *Game) Done() {
 
 	select {
 	case <-time.After(3 * time.Second):
-		if g.active == 1 {
-			g.active = 0
-		} else {
-			g.active = 1
-		}
-		g.init()
+		g.nextAlg()
 	}
 }
 
