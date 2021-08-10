@@ -9,18 +9,6 @@ import (
 	"github.com/meagar/sorts"
 )
 
-// func fill(n int) []int {
-// 	arr := make([]int, n)
-// 	for i := 0; i < n; i++ {
-// 		arr[i] = rand.Int()
-// 	}
-// 	return arr
-// }
-
-// var small = fill(100)
-// var med = fill(10_000)
-// var large = fill(1_000_000_000)
-
 type IntSorter struct {
 	t     *testing.T
 	cmps  int
@@ -35,13 +23,6 @@ func (i *IntSorter) Length() int {
 	return len(i.ints)
 }
 
-func (i *IntSorter) Cmp(a, b int) bool {
-	i.t.Helper()
-	i.t.Logf("cmp %d (%d) <= %d (%d)", a, i.ints[a], b, i.ints[b])
-	i.cmps++
-	return i.ints[a] <= i.ints[b]
-}
-
 func (i *IntSorter) Swap(a, b int) {
 	i.t.Helper()
 	i.t.Logf("swap %d (%d), %d (%d)", a, i.ints[a], b, i.ints[b])
@@ -54,7 +35,30 @@ func (i *IntSorter) At(idx int) int {
 	return i.ints[idx]
 }
 
+func (i *IntSorter) Done() {
+	return
+}
+
 func TestBubbleSort(t *testing.T) {
+
+	t.Run("It sorts", func(t *testing.T) {
+		input := fill(5)
+
+		want := copyInts(input)
+		sort.Ints(want)
+
+		got := IntSorter{
+			t:    t,
+			ints: copyInts(input),
+		}
+
+		sorts.BubbleSort(&got)
+
+		if !match(got.ints, want) {
+			t.Errorf("BubbleSort(%v):\n\tGot  %v,\n\twant %v", input, got.ints, want)
+		}
+
+	})
 
 	var bubbleSortCases = []struct {
 		input []int
@@ -100,9 +104,8 @@ func TestBubbleSort(t *testing.T) {
 }
 
 func TestQuickSort(t *testing.T) {
-
 	t.Run("It sorts", func(t *testing.T) {
-		input := fill(100)
+		input := fill(500)
 
 		want := copyInts(input)
 		sort.Ints(want)
@@ -115,7 +118,7 @@ func TestQuickSort(t *testing.T) {
 		sorts.QuickSort(&got)
 
 		if !match(got.ints, want) {
-			t.Errorf("QuickSort(%v): Got %v, want %v", input, got.ints, want)
+			t.Errorf("QuickSort(%v):\n\tGot  %v,\n\twant %v", input, got.ints, want)
 		}
 
 	})
@@ -125,16 +128,16 @@ func TestQuickSort(t *testing.T) {
 		cmps  int
 		swaps int
 	}{
-		// {[]int{1, 2}, 1, 0},
-		// {[]int{2, 1}, 1, 1},
-		// {[]int{1, 2, 3}, 3, 0},
-		// {[]int{3, 2, 1}, 3, 3},
-		// {[]int{5, 2, 4, 3, 1}, 10, 8},
-		// {[]int{1, 2, 3, 4, 5}, 10, 0},
-		// {[]int{5, 4, 3, 2, 1}, 10, 10},
-		// {[]int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}, 45, 0},
-		// {[]int{1, 10, 2, 9, 3, 8, 4, 7, 5, 6}, 45, 20},
-		// {[]int{10, 9, 8, 7, 6, 5, 4, 3, 2, 1}, 45, 45},
+		{[]int{1, 2}, 3, 0},
+		{[]int{2, 1}, 4, 1},
+		{[]int{1, 2, 3}, 7, 0},
+		{[]int{3, 2, 1}, 7, 1},
+		{[]int{5, 2, 4, 3, 1}, 17, 2},
+		{[]int{1, 2, 3, 4, 5}, 16, 0},
+		{[]int{5, 4, 3, 2, 1}, 16, 2},
+		{[]int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}, 43, 0},
+		{[]int{1, 10, 2, 9, 3, 8, 4, 7, 5, 6}, 55, 8},
+		{[]int{10, 9, 8, 7, 6, 5, 4, 3, 2, 1}, 44, 5},
 	}
 
 	for _, tc := range testCases {
@@ -189,26 +192,3 @@ func fill(n int) []int {
 	}
 	return arr
 }
-
-// func BenchmarkSortSmall(b *testing.B) {
-// 	for n := 0; n < b.N; n++ {
-// 		sorted := sort.IntSlice(small)
-// 		_ = sorted
-// 	}
-// }
-
-// func BenchmarkSortMed(b *testing.B) {
-// 	for n := 0; n < b.N; n++ {
-// 		sorted := sort.IntSlice(med)
-// 		_ = sorted
-// 	}
-// }
-
-// func BenchmarkSortLarge(b *testing.B) {
-// 	for n := 0; n < b.N; n++ {
-// 		sorted := sort.IntSlice(large)
-// 		if sorted[len(sorted)-1] == 0 {
-// 			panic("no")
-// 		}
-// 	}
-// }
