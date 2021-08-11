@@ -17,8 +17,20 @@ func main() {
 	ebiten.RunGame(&game.Game{
 		Algs: []*game.Alg{
 			{
+				Name:     "InsertionSort",
+				Fn:       sorts.InsertionSort,
+				DefaultN: 30,
+				Sleep:    0,
+			},
+			{
 				Name:     "BubbleSort",
 				Fn:       sorts.BubbleSort,
+				DefaultN: 30,
+				Sleep:    0,
+			},
+			{
+				Name:     "SelectionSort",
+				Fn:       sorts.SelectionSort,
 				DefaultN: 30,
 				Sleep:    0,
 			},

@@ -53,9 +53,13 @@ type Game struct {
 
 	// Sorting state
 	lastSwap [2]int    // the last two indexes that were swapped (to draw colored bars)
+	lastAt   []int     // the elements that were accessed during the last update
 	done     chan bool // whether the algorithm has reported completion
 	finished bool
-	swaps    int // the total number of times the algorithm swapped two elements
+
+	swaps   int // the total number of times the algorithm swapped two elements
+	lookups int // the total number of times the array was indexed into
+	cmps    int // the total number of comparisons performed (>, <, >=, <=, >, etc):w
 }
 
 var _ ebiten.Game = &Game{}
@@ -92,8 +96,10 @@ func (g *Game) nextAlg() {
 
 	// Reset state
 	g.swaps = 0
+	g.lookups = 0
 	g.bars = bars
 	g.alg = alg
+	g.finished = false
 	go alg.Fn(g)
 }
 
@@ -114,16 +120,24 @@ func (g *Game) Layout(outerWidth, outerHeight int) (int, int) {
 	return outerWidth, outerHeight
 }
 
+var n = 0
+
 func (g *Game) Update() error {
 	if g.alg == nil {
 		g.init()
 		return nil
 	}
 
+	// n++
+	// if n > 1 {
+	// 	n = 0
+	// } else {
+	// 	return nil
+	// }
+
 	if g.finished {
 		g.pause -= 1
 		if g.pause <= 0 {
-			g.finished = false
 			g.nextAlg()
 		}
 	} else {
@@ -134,17 +148,35 @@ func (g *Game) Update() error {
 	return nil
 }
 
+func (g *Game) lastAtIncludes(idx int) bool {
+	for _, at := range g.lastAt {
+		if at == idx {
+			return true
+		}
+	}
+	return false
+}
+
 func (g *Game) Draw(screen *ebiten.Image) {
 	op := ebiten.DrawImageOptions{}
 	for i, b := range g.bars {
 		op.GeoM.Reset()
+		op.ColorM.Reset()
+		if i == g.lastSwap[0] {
+			op.ColorM.Scale(1, 0, 0, 1)
+		} else if i == g.lastSwap[1] {
+			op.ColorM.Scale(0, 0, 1, 1)
+		} else if g.lastAtIncludes(i) {
+			op.ColorM.Scale(0, 1, 0, 1)
+		}
 		op.GeoM.Translate((g.barWidth+1)*float64(i), math.Ceil(float64(g.screenHeight)-b.height))
 		screen.DrawImage(b.img, &op)
 	}
-	debugMsg := fmt.Sprintf("%s %d elements: %d swaps\nFPS: %0.2f", g.alg.Name, len(g.bars), g.swaps, ebiten.CurrentFPS())
+	debugMsg := fmt.Sprintf("%s %d elements\nSwaps(red/blue): %d\nLookups (green): %d\nFPS: %0.2f", g.alg.Name, len(g.bars), g.swaps, g.lookups, ebiten.CurrentFPS())
 	if g.finished {
 		debugMsg += "\nDone"
 	}
+	// g.lastAt = []int{}
 	ebitenutil.DebugPrint(screen, debugMsg)
 }
 
@@ -155,7 +187,15 @@ func (g *Game) Draw(screen *ebiten.Image) {
 var _ sorts.SortInput = &Game{}
 
 func (g *Game) At(idx int) int {
+	<-g.tick
+	g.lookups++
+	g.lastAt = append(g.lastAt, idx)
+	g.tock <- struct{}{}
 	return g.bars[idx].n
+}
+
+func (g *Game) ResetIteration() {
+	g.lastAt = []int{}
 }
 
 func (g *Game) Swap(a, b int) {
@@ -177,6 +217,7 @@ func (g *Game) Length() int {
 }
 
 func (g *Game) Done() {
+	g.ResetIteration()
 	g.finished = true
 	// 60 ticks per second -> 3 second pause
 	g.pause = 60 * 3

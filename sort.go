@@ -12,12 +12,17 @@ type SortInput interface {
 	// At should return the element at the given index
 	At(idx int) int
 
+	// ResetIteration should be called at the top of each primary iteration
+	ResetIteration()
+
+	// Done should be called when the algorithm is finished sorting
 	Done()
 }
 
 func BubbleSort(s SortInput) {
 	for n := s.Length() - 1; n >= 0; n-- {
 		for idx := 0; idx < n; idx++ {
+			s.ResetIteration()
 			if s.At(idx) >= s.At(idx+1) {
 				s.Swap(idx, idx+1)
 			}
@@ -31,7 +36,7 @@ func QuickSort(s SortInput) {
 	s.Done()
 }
 
-// Translated from https://en.wikipedia.org/wiki/Quicksort
+// https://en.wikipedia.org/wiki/Quicksort
 func quicksort(s SortInput, lo, hi int) {
 	if lo >= 0 && hi >= 0 {
 		if lo < hi {
@@ -54,6 +59,7 @@ func quicksort_partition(s SortInput, lo, hi int) int {
 	j := hi + 1
 
 	for {
+		s.ResetIteration()
 		// we start from the beginning and if we
 		// find a value grater than the pivot
 		// (one that should be in the right, not
@@ -98,4 +104,67 @@ func quicksort_partition(s SortInput, lo, hi int) int {
 		// swap A[i] with A[j]
 		s.Swap(i, j)
 	}
+}
+
+// https://en.wikipedia.org/wiki/Insertion_sort
+func InsertionSort(s SortInput) {
+	// i ← 1
+	// while i < length(A)
+	for i := 1; i < s.Length(); i++ {
+		s.ResetIteration()
+		// j ← i
+		// while j > 0 and A[j-1] > A[j]
+		for j := i; j > 0 && s.At(j-1) > s.At(j); j-- {
+			// 	swap A[j] and A[j-1]
+			s.Swap(j, j-1)
+			// j ← j - 1
+			// end while
+		}
+		// i ← i + 1
+		// end while
+	}
+	s.Done()
+}
+
+func SelectionSort(s SortInput) {
+	// /* a[0] to a[aLength-1] is the array to sort */
+	// int i,j;
+	// int aLength; // initialise to a's length
+	// /* advance the position through the entire array */
+	// /*   (could do i < aLength-1 because single element is also min element) */
+	// for (i = 0; i < aLength-1; i++)
+	// {
+	for i := 0; i < s.Length()-1; i++ {
+		s.ResetIteration()
+		//     /* find the min element in the unsorted a[i .. aLength-1] */
+
+		//     /* assume the min is the first element */
+		//     int jMin = i;
+		jMin := i
+		//     /* test against elements after i to find the smallest */
+		//     for (j = i+1; j < aLength; j++)
+		//     {
+		for j := i + 1; j < s.Length(); j++ {
+			//         /* if this element is less, then it is the new minimum */
+			//         if (a[j] < a[jMin])
+			//         {
+			if s.At(j) < s.At(jMin) {
+				//             /* found new minimum; remember its index */
+				//     jMin = j;
+				jMin = j
+				//         }
+				//     }
+			}
+		}
+		//     if (jMin != i)
+		//     {
+		//         swap(a[i], a[jMin]);
+		//     }
+
+		if jMin != i {
+			s.Swap(i, jMin)
+		}
+		// }
+	}
+	s.Done()
 }
