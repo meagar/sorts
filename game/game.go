@@ -3,8 +3,8 @@ package game
 import (
 	"fmt"
 	"image/color"
+	"math"
 	"math/rand"
-	"time"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
@@ -37,33 +37,42 @@ type Game struct {
 	screenWidth, screenHeight int
 	bars                      []*bar
 	barWidth                  float64
-	tick                      chan (struct{})
+
+	// The sorting algorithm waits for us to signal to proceed on this channel
+	tick chan struct{}
+
+	// The sorting algorithm tells us it's safe to draw the screen on this channel
+	tock chan struct{}
+
+	// Used to delay transitions
+	pause int
 
 	// Which algorithm case we're displaying
 	active int
 	alg    *Alg
 
 	// Sorting state
-	lastSwap [2]int // the last two indexes that were swapped (to draw colored bars)
-	done     bool   // whether the algorithm has reported completion
-	swaps    int    // the total number of times the algorithm swapped two elements
+	lastSwap [2]int    // the last two indexes that were swapped (to draw colored bars)
+	done     chan bool // whether the algorithm has reported completion
+	finished bool
+	swaps    int // the total number of times the algorithm swapped two elements
 }
 
 var _ ebiten.Game = &Game{}
 
 func (g *Game) init() {
+	g.tick = make(chan struct{})
+	g.tock = make(chan struct{})
 	g.nextAlg()
 }
 
 func (g *Game) nextAlg() {
-	g.alg = nil
 	alg := g.Algs[g.active]
 	g.active++
 	if g.active >= len(g.Algs) {
 		g.active = 0
 	}
 
-	g.swaps = 0
 	ints := shuffle(alg.DefaultN)
 	bars := make([]*bar, len(ints))
 
@@ -81,10 +90,10 @@ func (g *Game) nextAlg() {
 		bars[i].img.Fill(color.White)
 	}
 
-	g.alg = alg
+	// Reset state
+	g.swaps = 0
 	g.bars = bars
-	g.done = false
-	g.tick = make(chan struct{})
+	g.alg = alg
 	go alg.Fn(g)
 }
 
@@ -101,54 +110,39 @@ func max(ints []int) int {
 func (g *Game) Layout(outerWidth, outerHeight int) (int, int) {
 	g.screenWidth = outerWidth
 	g.screenHeight = outerHeight
+
 	return outerWidth, outerHeight
 }
 
-var sleep = 0
-var ticks = 0
-
 func (g *Game) Update() error {
-	if len(g.bars) == 0 {
-		g.init()
-	}
-
 	if g.alg == nil {
+		g.init()
 		return nil
 	}
 
-	if !g.done {
-		// ticks++
-		// if ticks > g.alg().Sleep {
-		// ticks = 0
+	if g.finished {
+		g.pause -= 1
+		if g.pause <= 0 {
+			g.finished = false
+			g.nextAlg()
+		}
+	} else {
 		g.tick <- struct{}{}
-		// }
+		<-g.tock
 	}
 
 	return nil
 }
 
 func (g *Game) Draw(screen *ebiten.Image) {
-	if g.alg == nil {
-		return
-	}
 	op := ebiten.DrawImageOptions{}
 	for i, b := range g.bars {
 		op.GeoM.Reset()
-		op.GeoM.Translate((g.barWidth+1)*float64(i), float64(g.screenHeight)-b.height)
-
-		// Ideally, we'd just have one blue sprite and one red sprite, rather than filling/refilling constantly
-		// if i == g.lastSwap[0] {
-		// 	b.img.Fill(color.RGBA{255, 0, 0, 255})
-		// } else if i == g.lastSwap[1] {
-		// 	b.img.Fill(color.RGBA{0, 0, 255, 255})
-		// } else {
-		// 	b.img.Fill(color.White)
-		// }
-
+		op.GeoM.Translate((g.barWidth+1)*float64(i), math.Ceil(float64(g.screenHeight)-b.height))
 		screen.DrawImage(b.img, &op)
 	}
 	debugMsg := fmt.Sprintf("%s %d elements: %d swaps\nFPS: %0.2f", g.alg.Name, len(g.bars), g.swaps, ebiten.CurrentFPS())
-	if g.done {
+	if g.finished {
 		debugMsg += "\nDone"
 	}
 	ebitenutil.DebugPrint(screen, debugMsg)
@@ -165,33 +159,29 @@ func (g *Game) At(idx int) int {
 }
 
 func (g *Game) Swap(a, b int) {
-	// Block until the game tells us to proceed
+	// Block until the update loop tells us to proceed
 	<-g.tick
 
-	g.lastSwap = [2]int{a, b}
+	g.lastSwap[0] = a
+	g.lastSwap[1] = b
+
 	g.bars[a], g.bars[b] = g.bars[b], g.bars[a]
 	g.swaps++
+
+	// Unblock the update loop
+	g.tock <- struct{}{}
 }
 
-func (g *Game) CmpGE(a, b int) bool {
-	return a >= b
-}
-func (g *Game) CmpLE(a, b int) bool {
-	return a <= b
-}
 func (g *Game) Length() int {
 	return len(g.bars)
 }
 
 func (g *Game) Done() {
-	g.done = true
-	g.lastSwap = [2]int{-1, -1}
-	close(g.tick)
-
-	select {
-	case <-time.After(3 * time.Second):
-		g.nextAlg()
-	}
+	g.finished = true
+	// 60 ticks per second -> 3 second pause
+	g.pause = 60 * 3
+	g.lastSwap[0] = -1
+	g.lastSwap[1] = -1
 }
 
 func shuffle(n int) []int {

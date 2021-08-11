@@ -19,13 +19,19 @@ func main() {
 			{
 				Name:     "BubbleSort",
 				Fn:       sorts.BubbleSort,
-				DefaultN: 50,
+				DefaultN: 30,
 				Sleep:    0,
 			},
 			{
 				Name:     "QuickSort",
 				Fn:       sorts.QuickSort,
-				DefaultN: 250,
+				DefaultN: 100,
+				Sleep:    0,
+			},
+			{
+				Name:     "QuickSort",
+				Fn:       sorts.QuickSort,
+				DefaultN: 500,
 				Sleep:    0,
 			},
 		},
@@ -38,31 +44,3 @@ type IntSorter struct {
 
 	ints []int
 }
-
-// var _ sorts.SortInput = &IntSorter{}
-
-// func (i *IntSorter) Length() int {
-// 	return len(i.ints)
-// }
-
-// func (i *IntSorter) CmpLE(a, b int) bool {
-// 	i.cmps++
-// 	return i.ints[a] <= i.ints[b]
-// }
-// func (i *IntSorter) CmpGE(a, b int) bool {
-// 	i.cmps++
-// 	return i.ints[a] >= i.ints[b]
-// }
-
-// func (i *IntSorter) Swap(a, b int) {
-// 	i.swaps++
-// 	i.ints[a], i.ints[b] = i.ints[b], i.ints[a]
-// }
-
-// func (i *IntSorter) At(idx int) int {
-// 	return i.ints[idx]
-// }
-
-// func (i *IntSorter) Done() {
-// 	return
-// }

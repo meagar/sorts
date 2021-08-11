@@ -11,7 +11,6 @@ import (
 
 type IntSorter struct {
 	t     *testing.T
-	cmps  int
 	swaps int
 
 	ints []int
@@ -62,19 +61,18 @@ func TestBubbleSort(t *testing.T) {
 
 	var bubbleSortCases = []struct {
 		input []int
-		cmps  int
 		swaps int
 	}{
-		{[]int{1, 2}, 1, 0},
-		{[]int{2, 1}, 1, 1},
-		{[]int{1, 2, 3}, 3, 0},
-		{[]int{3, 2, 1}, 3, 3},
-		{[]int{5, 2, 4, 3, 1}, 10, 8},
-		{[]int{1, 2, 3, 4, 5}, 10, 0},
-		{[]int{5, 4, 3, 2, 1}, 10, 10},
-		{[]int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}, 45, 0},
-		{[]int{1, 10, 2, 9, 3, 8, 4, 7, 5, 6}, 45, 20},
-		{[]int{10, 9, 8, 7, 6, 5, 4, 3, 2, 1}, 45, 45},
+		{[]int{1, 2}, 0},
+		{[]int{2, 1}, 1},
+		{[]int{1, 2, 3}, 0},
+		{[]int{3, 2, 1}, 3},
+		{[]int{5, 2, 4, 3, 1}, 8},
+		{[]int{1, 2, 3, 4, 5}, 0},
+		{[]int{5, 4, 3, 2, 1}, 10},
+		{[]int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}, 0},
+		{[]int{1, 10, 2, 9, 3, 8, 4, 7, 5, 6}, 20},
+		{[]int{10, 9, 8, 7, 6, 5, 4, 3, 2, 1}, 45},
 	}
 
 	for _, tc := range bubbleSortCases {
@@ -93,9 +91,6 @@ func TestBubbleSort(t *testing.T) {
 				t.Errorf("BubbleSort(%v): Got %v, want %v", tc.input, sorter.ints, want)
 			}
 
-			if sorter.cmps != tc.cmps {
-				t.Errorf("BubbleSort(%v): Completed with %d comparisons, expected %d", tc.input, sorter.cmps, tc.cmps)
-			}
 			if sorter.swaps != tc.swaps {
 				t.Errorf("BubbleSort(%v): Completed with %d swaps, expected %d", tc.input, sorter.swaps, tc.swaps)
 			}
@@ -125,19 +120,18 @@ func TestQuickSort(t *testing.T) {
 
 	var testCases = []struct {
 		input []int
-		cmps  int
 		swaps int
 	}{
-		{[]int{1, 2}, 3, 0},
-		{[]int{2, 1}, 4, 1},
-		{[]int{1, 2, 3}, 7, 0},
-		{[]int{3, 2, 1}, 7, 1},
-		{[]int{5, 2, 4, 3, 1}, 17, 2},
-		{[]int{1, 2, 3, 4, 5}, 16, 0},
-		{[]int{5, 4, 3, 2, 1}, 16, 2},
-		{[]int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}, 43, 0},
-		{[]int{1, 10, 2, 9, 3, 8, 4, 7, 5, 6}, 55, 8},
-		{[]int{10, 9, 8, 7, 6, 5, 4, 3, 2, 1}, 44, 5},
+		{[]int{1, 2}, 0},
+		{[]int{2, 1}, 1},
+		{[]int{1, 2, 3}, 0},
+		{[]int{3, 2, 1}, 1},
+		{[]int{5, 2, 4, 3, 1}, 2},
+		{[]int{1, 2, 3, 4, 5}, 0},
+		{[]int{5, 4, 3, 2, 1}, 2},
+		{[]int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}, 0},
+		{[]int{1, 10, 2, 9, 3, 8, 4, 7, 5, 6}, 8},
+		{[]int{10, 9, 8, 7, 6, 5, 4, 3, 2, 1}, 5},
 	}
 
 	for _, tc := range testCases {
@@ -156,9 +150,6 @@ func TestQuickSort(t *testing.T) {
 				t.Errorf("QuickSort(%v): Got %v, want %v", tc.input, sorter.ints, want)
 			}
 
-			if sorter.cmps != tc.cmps {
-				t.Errorf("QuickSort(%v): Completed with %d comparisons, expected %d", tc.input, sorter.cmps, tc.cmps)
-			}
 			if sorter.swaps != tc.swaps {
 				t.Errorf("QuickSort(%v): Completed with %d swaps, expected %d", tc.input, sorter.swaps, tc.swaps)
 			}
